@@ -34,6 +34,7 @@ ols <- function(x, y, intercept = FALSE) {
     df = N-k,
     r2_uc = r2_uc,
     r2 = r2,
+    r2_bar = r2_bar,
     y_hat = y_hat,
     e = e,
     s2 = s2
