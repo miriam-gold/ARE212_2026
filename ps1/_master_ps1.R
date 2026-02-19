@@ -173,14 +173,20 @@ nrow(wdi_per_capita_log)
 ## Degrees of freedom: N-k
 df <- n-1 # k=1 because there is no intercept
 
-## beta
+## beta = 0.000237
 b <- ols_co2_gdp$beta
-## R^2 uncentered
-## R^2
 
-## Adjusted R^2
+## R^2 uncentered = 0.26
+ols_co2_gdp$r2_uc
 
-## s^2
+## R^2 = 0.25
+ols_co2_gdp$r2
+
+## Adjusted R^2 = 0.25
+ols_co2_gdp$r2_bar
+
+## s^2 9.46e-05
+ols_co2_gdp$s2
 
 predicted_vs_actual <-
   data.frame(
@@ -199,9 +205,6 @@ predicted_vs_actual %>%
     title = "Without intercept"
   )
 
-## There is clearly YUUUUGGEEE MAASSive heteroskedasticity in this regression
-## We have some of the best variances. The biggest. 
-
 # Q16. Regression with intercept =====================
 ols_co2_gdp_intercept <- 
   ols(
@@ -210,16 +213,20 @@ ols_co2_gdp_intercept <-
     intercept = TRUE
   )
 
-
 ## beta
 b_i <- ols_co2_gdp_intercept$beta
 
-## R^2 uncentered
-## R^2
+## R^2 uncentered = 0.3
+ols_co2_gdp_intercept$r2_uc
 
-## Adjusted R^2
+## R^2 = 0.12
+ols_co2_gdp_intercept$r2
 
-## s^2
+## Adjusted R^2 = 0.11
+ols_co2_gdp_intercept$r2_bar
+
+## s^2 = 9.02-05
+ols_co2_gdp_intercept$s2
 
 predicted_vs_actual_intercept <-
   data.frame(
@@ -295,7 +302,7 @@ ols_co2_gdp_quad$beta
 ols_co2_gdp_demean$beta
 
 
-# Q19. ===============================
+# Q19. More power of FWL ===============================
 ols_co2_gdp_q19 <- 
   ols(
     x = wdi_per_capita_quad %>% select(GDPpc_thou),
