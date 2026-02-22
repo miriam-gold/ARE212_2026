@@ -1,11 +1,13 @@
-# ============================================================
-# ARE 212, Spring 2026
-# PS 1
-# Author: David Cai, Miriam Gold, Ella Moxley, Geoffrey Yip
-# Date: Feb 25, 2026
-# ============================================================
-#ttktk
-# Set up ===================
+---
+title: "PS 1"
+subtitle: "ARE 212, Spring 2026"
+author: "David Cai, Miriam Gold, Ella Moxley, Geoffrey Yip"
+date: "25 February 2026"
+format: pdf
+---
+
+# Set-up
+```{r}
 
 library(WDI)
 library(tidyverse)
@@ -32,7 +34,11 @@ countries <-
   iso_codes |>
   pull("Alpha-2 code")
 
-# Q1. Read in data ========================
+```
+
+# Q1
+
+```{r}
 wdi_data_raw <- 
   WDI(
     country = countries,
@@ -40,8 +46,11 @@ wdi_data_raw <-
     start = 2010, 
     end = 2010
   )
+```
 
-# Q2. Rename variables ====================
+# Q2
+
+```{r}
 wdi_data_clean <- 
   wdi_data_raw |>
   rename(
@@ -51,8 +60,11 @@ wdi_data_clean <-
     GOV = "SH.XPD.GHED.GD.ZS"
   ) |>
   drop_na()
+```
 
-# Q3. Summary stats
+# Q3
+
+```{r}
 wdi_summary_stats <- 
   wdi_data_clean |>
    pivot_longer(cols = c("CO2", "GDP", "POP"), names_to = "var") |>
@@ -63,8 +75,12 @@ wdi_summary_stats <-
     min = min(value),
     max = max(value)
    )
+print(wdi_summary_stats)
+```
 
-# Q4. Histogram of CO2 and GDP
+# Q4
+
+```{r}
 wdi_data_clean %>%
    pivot_longer(cols = c("CO2", "GDP", "POP"), names_to = "var") %>%
   filter(var %in% c("CO2", "GDP")) %>%
@@ -72,8 +88,11 @@ wdi_data_clean %>%
   geom_histogram(bins = 15, position = "dodge") +
   scale_fill_discrete(name = NULL) +
   theme_bw()
+```
 
-# Q5. Plot CO2 against GDP
+# Q5
+
+```{r}
 wdi_data_clean %>%
   ggplot(aes(x = GDP, y = CO2)) +
   geom_point() +
@@ -83,16 +102,22 @@ wdi_data_clean %>%
     title = "Country-level Carbon Emissions against GDP (2010)"
   ) +
   theme_bw()
+```
 
-# Q6/7. Per capita variables ===================
+# Q6/7
+
+```{r}
 wdi_per_capita <-
   wdi_data_clean %>%
   mutate(
     CO2pc = CO2/POP,
     GDPpc = GDP/POP
   )
+```
 
-# Q8. Plot CO2/pop against GDP/pop ===============
+# Q8
+
+```{r}
 wdi_per_capita %>%
   ggplot(aes(x = GDPpc, y = CO2pc)) +
   geom_point() +
@@ -103,15 +128,22 @@ wdi_per_capita %>%
   ) +
   theme_bw()
 
-# Q9. Demeaned variables =========================
+```
+
+# Q9
+
+```{r}
 wdi_per_capita_demeaned <- 
   wdi_per_capita %>%
   mutate(
     CO2pcdev = CO2pc-mean(CO2pc),
     GDPpcdev = GDPpc-mean(GDPpc)
   )
+```
 
-# Q10. Scatterplot of demeaned variables ============
+# Q10
+
+```{r}
 wdi_per_capita_demeaned %>%
   ggplot(aes(x = GDPpcdev, y = CO2pcdev)) +
   geom_point() +
@@ -121,16 +153,22 @@ wdi_per_capita_demeaned %>%
     title = "Per capita demeaned carbon emissions and GDP (2010)"
   ) +
   theme_bw()
+```
 
-# Q11. Natural log variables ===================
+# Q11
+
+```{r}
 wdi_per_capita_log <-
   wdi_per_capita_demeaned %>%
   mutate(
     CO2pcln = log(CO2pc),
     GDPpcln = log(GDPpc)
   )
+```
 
-# Q12. Scatterplot of logged variables ============
+# Q12
+
+```{r}
 wdi_per_capita_log %>%
   ggplot(aes(x = GDPpcln, y = CO2pcln)) +
   geom_point() +
@@ -140,51 +178,110 @@ wdi_per_capita_log %>%
     title = "Per capita demeaned carbon emissions and GDP (2010)"
   ) +
   theme_bw()
+```
 
-# Q13. Export data ==================
+# Q13
+
+```{r}
+#| eval: false
   wdi_per_capita_log %>%
     write_csv(file = file.path(path_data, "are212_gold_ps1_wdi_clean.csv"))
+```
 
-# Q14. Regress CO2pc on GDPpc ==================
+# Q14
+
+We define a custom OLS regression function below
+```{r}
+
+ols <- function(x, y, intercept = FALSE) {
+  
+  X <- as.matrix(x)
+  Y <- as.matrix(y)
+
+  if(intercept) {
+    intercept_vector <- matrix(1, nrow(X))
+    X <- cbind(intercept_vector, X)
+  }
+
+
+  N <- nrow(X)
+  k <- ncol(X)
+  b_ols <- solve(t(X)%*%X) %*% (t(X)%*%Y) # b = (X'X)^{-1}(X'Y)
+  y_hat <- (X) %*% b_ols
+  
+  r2_uc <- (t(y_hat)%*%y_hat) / (t(Y)%*%Y)
+  r2 <- t(y_hat-mean(Y))%*%(y_hat-mean(Y)) / t(Y-mean(Y))%*%(Y-mean(Y))
+  r2 <- r2[[1,1]]
+  r2_bar <- 1 - ((N-1)/(N-k))*(1-r2)
+
+  e <- Y-y_hat
+  s2 <- (t(e)%*%e)/(N-k)
+
+  list(
+    beta = b_ols,
+    X = X,
+    Y = Y,
+    N = N,
+    k = k,
+    df = N-k,
+    r2_uc = r2_uc,
+    r2 = r2,
+    r2_bar = r2_bar,
+    y_hat = y_hat,
+    e = e,
+    s2 = s2
+  )
+}
+```
+
+Next, run each specification and report OLS coefficients
+
+```{r}
 
 ols(
   wdi_per_capita_log$GDPpc, 
   wdi_per_capita_log$CO2pc
-)$beta # coefficient = 2.37e-10
+)$beta
 
 ols(
   wdi_per_capita_log$GDPpc, 
   wdi_per_capita_log$CO2pc*1000
-)$beta # coefficient = 2.37e-7 (the coefficient has been multiplied by 1000)
+)$beta # the coefficient has been multiplied by 1000)
 
 ols_co2_gdp <- 
   ols(
     wdi_per_capita_log$GDPpc/1000, 
     wdi_per_capita_log$CO2pc*1000
   )
-ols_co2_gdp$beta # coefficient = 2.37e-4 (the coefficient has been been multiplied by a further factor of 1000)
+ols_co2_gdp$beta
 
-# Q15. Model stats and predicted values ==============
+```
+
+In the last regression, the coefficient is multiplied by a further factor of 1000
+
+# Q15
+
+```{r}
 
 ## N = 197
-nrow(wdi_per_capita_log)
+n <- nrow(wdi_per_capita_log)
 
 ## Degrees of freedom: N-k
 df <- n-1 # k=1 because there is no intercept
 
-## beta = 0.000237
+## beta
 b <- ols_co2_gdp$beta
 
-## R^2 uncentered = 0.26
+## R^2 uncentered
 ols_co2_gdp$r2_uc
 
-## R^2 = 0.25
+## R^2
 ols_co2_gdp$r2
 
-## Adjusted R^2 = 0.25
+## Adjusted R^2
 ols_co2_gdp$r2_bar
 
-## s^2 9.46e-05
+## s^2
 ols_co2_gdp$s2
 
 predicted_vs_actual <-
@@ -204,7 +301,11 @@ predicted_vs_actual %>%
     title = "Without intercept"
   )
 
-# Q16. Regression with intercept =====================
+```
+
+# Q16
+
+```{r}
 ols_co2_gdp_intercept <- 
   ols(
     wdi_per_capita_log$GDPpc/1000, 
@@ -215,16 +316,16 @@ ols_co2_gdp_intercept <-
 ## beta
 b_i <- ols_co2_gdp_intercept$beta
 
-## R^2 uncentered = 0.3
+## R^2 uncentered
 ols_co2_gdp_intercept$r2_uc
 
-## R^2 = 0.12
+## R^2
 ols_co2_gdp_intercept$r2
 
-## Adjusted R^2 = 0.11
+## Adjusted R^2
 ols_co2_gdp_intercept$r2_bar
 
-## s^2 = 9.02-05
+## s^2
 ols_co2_gdp_intercept$s2
 
 predicted_vs_actual_intercept <-
@@ -245,7 +346,11 @@ predicted_vs_actual_intercept %>%
     title = "With intercept"
   )
 
-# Q17. Regression, quadratic ==========================
+```
+
+# Q17
+
+```{r}
 wdi_per_capita_quad <-
   wdi_per_capita_log %>%
   mutate(
@@ -280,7 +385,11 @@ predicted_vs_actual_quad %>%
     title = "With intercept + quadratic term"
   )
 
-# Q18. Demeaned ===================================
+```
+
+# Q18
+
+```{r}
 wdi_per_capita_demean <-
   wdi_per_capita_quad %>%
   mutate(
@@ -296,12 +405,15 @@ ols_co2_gdp_demean <-
     intercept = FALSE
   )
   
-# They're the same, whoa!
+# They're the same!
 ols_co2_gdp_quad$beta
 ols_co2_gdp_demean$beta
 
+```
 
-# Q19. More power of FWL ===============================
+# Q19
+
+```{r}
 ols_co2_gdp_q19 <- 
   ols(
     x = wdi_per_capita_quad %>% select(GDPpc_thou),
@@ -340,3 +452,5 @@ ols_resid_on_resid <-
   )
 
 ols_resid_on_resid$beta
+
+```
