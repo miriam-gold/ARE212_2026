@@ -269,6 +269,18 @@ predicted_vs_actual_quad <-
 ) %>%
   rename(y_hat = 1, y = 2, x = 3)
 
+# In this regression, we now add a quadratic term for GDP per capita.
+# This does not violate the first two assumptions. 
+# We are still linear in parameters; it's just that we're linear in a squared
+# term now too.
+# We still have full rank because the quadratic term is not a simple
+# rescaling of our original GDP per capita term.
+# 
+# We may have violated spherical errors, though it's hard to tell for sure.
+
+# The specification does make economic sense. This is the Kuznets Curve story,
+# where firms adopt industrize as they develop but then develop cleaner 
+# technology once they get rich enough.
 predicted_vs_actual_quad %>%
   ggplot(aes(x = y, y = y_hat)) +
   geom_point() +
