@@ -13,6 +13,7 @@ library(WDI)
 library(tidyverse)
 library(magrittr)
 library(fs)
+library(janitor)
 
 
 # Paths ==================
@@ -28,10 +29,16 @@ dir_walk(path_functions, source)
 iso_codes <- 
   read_csv("https://gist.githubusercontent.com/radcliff/f09c0f88344a7fcef373/raw/2753c482ad091c54b1822288ad2e4811c021d8ec/wikipedia-iso-country-codes.csv")
 
-wb_vars <- c("EN.GHG.CO2.MT.CE.AR5", "NY.GDP.MKTP.KD", "SP.POP.TOTL", "SH.XPD.GHED.GD.ZS")
+wb_vars <- c("EN.GHG.CO2.MT.CE.AR5", "NY.GDP.MKTP.KD", "SP.POP.TOTL")
+
+wdi_avail_countries <- 
+  WDI::WDI_data %>%
+  purrr::pluck(2) %>% 
+  pull(iso2c)
 
 countries <- 
   iso_codes |>
+  filter(`Alpha-2 code` %in% wdi_avail_countries) %>%
   pull("Alpha-2 code")
 
 ```
@@ -39,13 +46,19 @@ countries <-
 # Q1
 
 ```{r}
+# I had to disable the automatic data fetching because the WB API servers stopped responding
+if(FALSE){
 wdi_data_raw <- 
-  WDI(
-    country = countries,
-    indicator = wb_vars, 
-    start = 2010, 
-    end = 2010
+  countries %>%
+  purrr::map(~wdi_noisy(country = .x, indicator=wb_vars, start=2010, end=2010)) %>%
+  purrr::list_rbind()
+}
+
+wdi_data_raw <-
+  read_csv(
+    file.path(path_data, "48038096-3fbd-47af-8962-7f774cfef8a8_Data.csv")
   )
+
 ```
 
 # Q2
@@ -53,12 +66,23 @@ wdi_data_raw <-
 ```{r}
 wdi_data_clean <- 
   wdi_data_raw |>
-  rename(
-    CO2 = "EN.GHG.CO2.MT.CE.AR5",
-    GDP = "NY.GDP.MKTP.KD",
-    POP = "SP.POP.TOTL",
-    GOV = "SH.XPD.GHED.GD.ZS"
+  clean_names() %>%
+  drop_na() %>%
+  select(country_code, series_code, x2010_yr2010) %>%
+  mutate(
+    var_name = case_when(
+      series_code == "EN.GHG.CO2.MT.CE.AR5" ~ "CO2",
+      series_code == "NY.GDP.MKTP.KD" ~ "GDP",
+      series_code == "SP.POP.TOTL" ~ "POP"
+    ),
+    x2010_yr2010 = as.numeric(x2010_yr2010)
   ) |>
+    rename(country = country_code) %>%
+    pivot_wider(
+      id_cols = country,
+      names_from = "var_name",
+      values_from = "x2010_yr2010"
+    ) %>%
   drop_na()
 ```
 
@@ -405,11 +429,15 @@ ols_co2_gdp_demean <-
     intercept = FALSE
   )
   
-# They're the same!
 ols_co2_gdp_quad$beta
 ols_co2_gdp_demean$beta
 
 ```
+
+The beta's we get from a regression where we demean the variables will be 
+about the same to the results we get from question 17. Even though we do not 
+include an explicit intercept, the demeaning allows us to recover the results
+from question 17 because we are centering the data at zero and keeping the slope the same. 
 
 # Q19
 
@@ -454,3 +482,15 @@ ols_resid_on_resid <-
 ols_resid_on_resid$beta
 
 ```
+
+In question 17, we regressed CO2pc = b1 + b2*GDPpc + b3*GDPpc^2.
+In question 19, we regressed
+CO2pc on GDPpc, and obtained the residual e1 
+1 on GDPpc, and obtained the residual e2
+GDPpc^2 on GDPpc, and obtained the residual e3
+Finally we regressed e1 = a1*e2 + a2*e3. we see saw the coefficient on e2 is the same as b1; the coefficient on e3 is the same as b3.
+That is, a1 = b1 and a2 = b3. 
+This is an another example of FWL Thereom in action. Removing the variation in the CO2pc, 1, and GDPpc^2 that comes from GDPpc and using the residual variation as regressand/regressors
+gives you the same coefficients as the original equation in Q17.  
+
+
