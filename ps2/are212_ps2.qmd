@@ -1,0 +1,49 @@
+---
+title: "PS 1"
+subtitle: "ARE 212, Spring 2026"
+author: "David Cai, Miriam Gold, Ella Moxley, Geoffrey Yip"
+date: "25 February 2026"
+format: pdf
+mainfont: "Palatino"
+sansfont: "Palatino"
+---
+
+
+```{r}
+library(tidyverse)
+library(haven)
+
+path <- "~/projects/ARE212_2026/ps2"
+path_data <- file.path(path, "data")
+
+```
+
+# Q1
+
+
+```{r}
+data_nerlove <- read_dta(file.path(path_data, "nerlove.dta"))
+
+data_nerlove_clean <-
+    data_nerlove %>%
+    # Sort by kwh
+    arrange(q) %>%
+    # Delete anomalous wage observation
+    filter(pl < 180)
+
+```
+
+# Q2
+
+# Q3
+
+# Q4
+
+# Q5
+
+# Q6
+
+# Q7
+
+# Q8
+
