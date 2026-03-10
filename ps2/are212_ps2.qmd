@@ -35,9 +35,56 @@ data_nerlove_clean <-
 
 # Q2
 
+```{r}
+# Replicate regression I of Table 3 (p. 176) in the paper
+# first log the varibales 
+data_reg <- 
+    data_nerlove_clean %>%
+  mutate(
+    ltc = log(tc),
+    lq  = log(q),
+    lpl = log(pl),
+    lpf = log(pf),
+    lpk = log(pk),
+    Y = lq,
+    P1P3 = lpl - lpf,
+    P2P3 = lpk - lpf, # k minus fuel
+    CP3 = ltc - lpf
+  )
+
+reg1 <- lm( CP3 ~ Y + P1P3 + P2P3, data = data_reg)
+
+```
+
 # Q3
+Conduct the hypothesis test using CRS (i.e., $\beta_y = 1$).
+```{r}
+#t = betahat - beta0/SE
+
+betahat <- coef(reg1)["Y"]
+se <- summary(reg1)$coefficients["Y", "Std. Error"]
+t_stat <- (betahat - 1) / se
+pval <- 1-pt(abs(t_stat), df = nrow(data_reg)-4)
+print(paste("P-value of \beta_y is", pval))
+```
+
+Our point estimate is significant at the 0.01 level, so we likely have increasing returns to scale, since $r = \frac{1}{0.71} > 1$ 
 
 # Q4
+
+```{r}
+data_reg %>%
+    mutate(resid = reg1$residuals) %>%
+    ggplot(aes(lq, resid)) + 
+    geom_point() +
+    labs(
+        x = "Log output",
+        y = "Residuals"
+    ) +
+    theme_bw()
+```
+
+The uneven spread of the residuals over the range of output indicates that homoskedasticity is violated. From an economic perspective, 
 
 # Q5
 
