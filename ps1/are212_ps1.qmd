@@ -3,7 +3,10 @@ title: "PS 1"
 subtitle: "ARE 212, Spring 2026"
 author: "David Cai, Miriam Gold, Ella Moxley, Geoffrey Yip"
 date: "25 February 2026"
-format: pdf
+format:
+  pdf:
+    pdf-engine: xelatex
+    mainfont: "TeX Gyre Pagella"
 ---
 
 # Set-up
