@@ -13,7 +13,7 @@ sansfont: "Palatino"
 library(tidyverse)
 library(haven)
 
-path <- "~/projects/ARE212_2026/ps2"
+path <- getwd()
 path_data <- file.path(path, "data")
 
 ```
@@ -87,10 +87,93 @@ data_reg %>%
 The uneven spread of the residuals over the range of output indicates that homoskedasticity is violated. From an economic perspective, 
 
 # Q5
+```{r}
+#divide sample into 5 subgroups by ln(output). by quintile
+data_reg <- data_reg %>% 
+  mutate(lq_quintile = cut_number(lq, 
+                                  n = 5, # Specify 5 groups for quintiles
+                                  labels = c("Q1", "Q2", "Q3", "Q4", "Q5")))
+
+regIII_df <- tibble(quantile = character(), coef = numeric(), returnstoscale = numeric())
+for (group in c("Q1", "Q2", "Q3", "Q4", "Q5")) {
+  reg <- lm( CP3 ~ Y + P1P3 + P2P3, data = data_reg %>% filter(lq_quintile == group))
+  betahat <- coef(reg)["Y"]
+  rts = 1/betahat
+  
+  regIII <- tibble(quantile = group, coef = betahat, returnstoscale = rts)
+  regIII_df <- rbind(regIII_df,regIII)
+}
+
+print(regIII_df)
+```
+It looks like the smallest firms actually have the largest returns to scale. Larger firm output is correlated with smaller returns to scale. 
+
 
 # Q6
+```{r}
+data_reg <- 
+  data_reg %>% 
+  mutate(isQ1 = lq_quintile == "Q1",
+         isQ2 = lq_quintile == "Q2",
+         isQ3 = lq_quintile == "Q3",
+         isQ4 = lq_quintile == "Q4",
+         isQ5 = lq_quintile == "Q5")
+data_reg <- 
+  data_reg %>% 
+  mutate(YQ1 = Y*isQ1,
+         YQ2 = Y*isQ2,
+         YQ3 = Y*isQ3,
+         YQ4 = Y*isQ4,
+         YQ5 = Y*isQ5)
+
+reg6 <- lm( CP3 ~ YQ1 + YQ2 + YQ3 + YQ4 + YQ5 + P1P3 + P2P3, data = data_reg)
+```
+
+```{r}
+reg6
+```
+There are noticeable changes in the slope coefficients on the Y terms. In the separate group regressions, the slope coefficients ranged from 0.4 to 1.04. Now they only range from 0.43 to 0.63 in the pooled regressed. The implied dispersion in returns to scale is much smaller now. 
 
 # Q7
+The model in Question 3 is a restricted version of the model in Question 6. The model in Q3 imposes the restriction that all of the coefficients on the YQ variables in the Q6 model are equal to each other. Note in both models we think the coefficients on the other variables should be the same. 
+
+Let $\beta_1$ be the coefficient on $YQ1$, $\beta_2$ be the coefficient on $YQ2$, ... $\beta_5$ be the coefficient on $YQ5$. The restriction $\beta_1 = \beta_2 = \beta_3 = \beta_4 = \beta_5$ is identical to testing: $\beta_1 - \beta_2 = 0$, $\beta_1 - \beta_3 = 0$, $\beta_1 - \beta_4 = 0$, $\beta_1 - \beta_5 = 0$ together. There are 4 restrictions (J=4). Below we conduct this F-stat.
+
+```{r}
+ssr_reg1 <- sum(reg1$residuals^2)
+ssr_reg6 <- sum(reg6$residuals^2)
+
+F_stat = ((ssr_reg1 - ssr_reg6)/4) / (ssr_reg6/(nobs(reg6)-length(coef(reg6))))
+
+print(paste0("F stat: ", F_stat))
+p_value <- pf(F_stat, 4, nobs(reg6)-length(coef(reg6)), lower.tail = FALSE)
+print(paste0("P-Value is:", p_value))
+```
+Separate t-tests on each of the $\beta_i$ coeffs would not have given the same results. 
+
 
 # Q8
+Run specification that is identical to reg1 from Question #2, but now adding a term for ln(y)^2. This regression changes the structural interpretation of the coefficients. According to the discussion on page 184, returns to scale now is expressed as $r(y) = 1/(\alpha + \beta Y)$, where $\alpha$ refers to the coefficient on $Y$ and $\beta$ refers to the coefficient on $Y^2$. If returns to scale decline with output, it must be that $\beta$ is positive.
+
+So we just need to conduct an t-test on whether $\beta >= 0$ against $\beta < 0$.
+
+```{r}
+data_reg <- 
+    data_reg %>%
+  mutate(Ysq = Y^2)
+
+reg8 <- lm( CP3 ~ Y + Ysq + P1P3 + P2P3, data = data_reg)
+reg8
+```
+1 sided t-test
+```{r}
+#t = betahat - beta0/SE
+
+betahat <-  coef(reg8)["Ysq"]
+se <- summary(reg8)$coefficients["Ysq", "Std. Error"]
+t_stat <- (betahat - 0) / se
+pval <- pt(t_stat, df = nobs(reg8)-length(coef(reg8))) #pt returns area to the left of the stat
+print(paste("P-value of \beta_Ysq is", pval))
+```
+We fail to reject the null hypothesis that $\beta$ is positive. Looks like returns to scale decrease with output.
 
