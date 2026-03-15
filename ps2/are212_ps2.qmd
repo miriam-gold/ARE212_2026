@@ -13,8 +13,9 @@ sansfont: "Palatino"
 library(tidyverse)
 library(haven)
 
-path <- getwd()
-path_data <- file.path(path, "data")
+path <- "~/projects/ARE212_2026/"
+path_ps2 <- file.path(path, "ps2")
+path_data <- file.path(path_ps2, "data")
 
 ```
 
@@ -35,9 +36,8 @@ data_nerlove_clean <-
 
 # Q2
 
+Here, we replicate regression I of Table 3 (p. 176)
 ```{r}
-# Replicate regression I of Table 3 (p. 176) in the paper
-# first log the varibales 
 data_reg <- 
     data_nerlove_clean %>%
   mutate(
@@ -59,16 +59,19 @@ reg1 <- lm( CP3 ~ Y + P1P3 + P2P3, data = data_reg)
 # Q3
 Conduct the hypothesis test using CRS (i.e., $\beta_y = 1$).
 ```{r}
-#t = betahat - beta0/SE
 
 betahat <- coef(reg1)["Y"]
+
 se <- summary(reg1)$coefficients["Y", "Std. Error"]
+
 t_stat <- (betahat - 1) / se
-pval <- 1-pt(abs(t_stat), df = nrow(data_reg)-4)
+
+pval <- 2*pt(abs(t_stat), df = nrow(data_reg)-4, lower.tail = FALSE)
+
 print(paste("P-value of \beta_y is", pval))
 ```
 
-Our point estimate is significant at the 0.01 level, so we likely have increasing returns to scale, since $r = \frac{1}{0.71} > 1$ 
+Our point estimate is significant near the 0.00... level, so we can reject the null that we have constant returns to scale. Since $r = \frac{1}{0.71} > 1$, we likely have increasing returns to scale. 
 
 # Q4
 
@@ -84,7 +87,7 @@ data_reg %>%
     theme_bw()
 ```
 
-The uneven spread of the residuals over the range of output indicates that homoskedasticity is violated. From an economic perspective, 
+The uneven spread of the residuals over the range of output indicates that homoskedasticity is violated. Economically, it suggests the association between output and costs varies over levels of output, suggesting returns to scale may differ across small and large companies in the industry. 
 
 # Q5
 ```{r}
