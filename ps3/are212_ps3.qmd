@@ -49,7 +49,10 @@ data_nls80 %>%
     stroke = 0,
     size = 0.75
   ) +
-  facet_wrap(~var, scales = "free_y")
+  facet_wrap(~var, scales = "free_y") +
+  theme(
+    axis.text.x = element_text(angle = 60, hjust = 1)
+  )
 ```
 
 ```{r}
@@ -78,7 +81,10 @@ data_macro %>%
   ) %>%
   ggplot(aes(date, value, group = variable)) +
   geom_line() +
-  facet_wrap(~variable, scales = "free_y")
+  facet_wrap(~variable, scales = "free_y") +
+  theme(
+    axis.text.x = element_text(angle = 60, hjust = 1)
+  )
 ```
 
 # Q4
