@@ -18,7 +18,7 @@
 
 ## 3. Review phase
 1. Review everyone's PRs, commenting on anything that you disagree with or that confuses you.
-2. I will approve all the PRs and 
+2. I (Miriam) will approve all the PRs and submit on Gradescope.
 
 ## PS 3
 
