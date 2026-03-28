@@ -1,0 +1,70 @@
+# System setup
+
+```{r}
+here::i_am("ps3/_setup.qmd")
+library(tidyverse)
+library(haven)
+library(here)
+
+path <- here()
+path_ps3 <- file.path(path, "ps3")
+path_data <- file.path(path_ps3, "data")
+
+ggplot2::theme_set(
+  theme_bw() +
+    theme(
+      text = element_text(family = "sans"),
+      strip.background = element_blank()
+    )
+)
+
+```
+
+
+# Q1 and Q3: Data loading and cleaning
+
+```{r}
+data_nls80 <- read_dta(file.path(path_data, "NLS80.dta"))
+```
+
+```{r}
+data_nls80 %>%
+  mutate(index = row_number()) %>%
+  pivot_longer(
+    cols = !index,
+    names_to = "var"
+  ) %>%
+  ggplot(aes(index, value)) +
+  geom_point(
+    shape = 21,
+    alpha = 0.5,
+    fill = "black",
+    stroke = 0,
+    size = 0.75
+  ) +
+  facet_wrap(~var, scales = "free_y") +
+  theme(
+    axis.text.x = element_text(angle = 60, hjust = 1)
+  )
+```
+
+
+```{r}
+data_macro <- read_dta(file.path(path_data, "macrodata.dta"))
+```
+
+```{r}
+data_macro %>%
+  mutate(date = year + (qtr / 10)) %>%
+  select(!c(year, qtr)) %>%
+  pivot_longer(
+    cols = !date,
+    names_to = "variable"
+  ) %>%
+  ggplot(aes(date, value, group = variable)) +
+  geom_line() +
+  facet_wrap(~variable, scales = "free_y") +
+  theme(
+    axis.text.x = element_text(angle = 60, hjust = 1)
+  )
+```
