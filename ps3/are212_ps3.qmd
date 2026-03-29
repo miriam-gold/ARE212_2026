@@ -10,18 +10,9 @@ sansfont: "Palatino"
 
 {{< include _setup.qmd >}}
 
-# Q2
+{{< include ps3_q2.qmd >}}
 
-```{r}
+{{< include ps3_q4.qmd >}}
 
-```
-
-# Q4
-
-```{r}
-```
-
-# Q5
-```{r}
-```
+{{< include ps3_q5.qmd >}}
 
